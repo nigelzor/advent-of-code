@@ -2,35 +2,31 @@
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
+#include <sys/stat.h>
+#include <sys/mman.h>
+#include <fcntl.h>
 
 int react(char skip) {
+	struct stat sb;
+	int fd = open("day5.txt", O_RDONLY);
+	fstat(fd, &sb);
+
+	char *buf = mmap(NULL, sb.st_size, PROT_WRITE, MAP_PRIVATE, fd, 0);
 	int pos = -1;
-	int bsz = 1024;
-	char *buf = malloc(bsz * sizeof(char));
-	FILE *f = fopen("day5.txt", "rb");
-	int c;
-	if (f) {
-		while ((c = getc(f)) != EOF) {
-			if (skip && (c == skip || c - 32 == skip)) {
-				continue;
-			}
-			if (pos >= 0 && ((buf[pos] == (c - 32)) || (buf[pos] == (c + 32)))) {
-				pos--;
-			} else {
-				pos += 1;
-				if (pos >= bsz) {
-					bsz *= 2;
-					buf = realloc(buf, bsz * sizeof(char));
-				}
-				buf[pos] = c;
-			}
+	for (int i = 0; i < sb.st_size; i++) {
+		char c = buf[i];
+		if (skip && (c == skip || c - 32 == skip)) {
+			continue;
+		}
+		if (pos >= 0 && (buf[pos] == (c ^ ' '))) {
+			pos--;
+		} else {
+			pos++;
+			buf[pos] = c;
 		}
 	}
 	buf[pos] = 0;
-	// puts(buf);
-	// printf("skipping %c, length: %i\n", skip, pos);
-	fclose(f);
-	free(buf);
+	munmap(buf, sb.st_size);
 	return pos;
 }
 
