@@ -1,7 +1,7 @@
 CFLAGS=-fsanitize=address
 
 .PHONY: all
-all: venv day5
+all: venv 2018/day5
 
 venv:
 	virtualenv -p python3 venv
