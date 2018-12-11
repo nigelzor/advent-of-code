@@ -24,14 +24,19 @@ def maxp(size):
     max = None
     max_c = None
     for x in range(1, 300 + 1 - (size - 1)):
-        for y in range(1, 300 + 1 - (size - 1)):
-            p = 0
+        p = 0
+        for ya in range(1, size):
             for xa in range(x, x + size):
-                for ya in range(y, y + size):
-                    p += ps[xa, ya]
+                p += ps[xa, ya]
+
+        for y in range(1, 300 + 1 - (size - 1)):
+            for xa in range(x, x + size):
+                p += ps[xa, y + size - 1]
             if max is None or p > max:
                 max = p
                 max_c = (x, y)
+            for xa in range(x, x + size):
+                p -= ps[xa, y]
     return max_c, max
 
 
