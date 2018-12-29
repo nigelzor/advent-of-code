@@ -1,7 +1,7 @@
 #include <stdio.h>
 
 int main() {
-    int r0 = 3115806, /*r1 = 0, r2 = 0, r3 = 0,*/ r4 = 0, r5 = 0;
+    int r0 = 3115806, r4 = 0, r5 = 0;
     r5 = 123;
     while (1) {
         r5 = r5 & 456;
@@ -22,14 +22,7 @@ int main() {
             if (256 > r4) {
                 break;
             }
-            int r3 = 0;
-            while (1) {
-                if (((r3 + 1) * 256) > r4) {
-                    r4 = r3;
-                    break;
-                }
-                r3 = r3 + 1;
-            }
+            r4 = r4 / 256;
         }
         printf("checking %i == %i\n", r5, r0);
         if (r5 == r0) {
