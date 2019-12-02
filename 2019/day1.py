@@ -1,9 +1,5 @@
+import doctest
 import math
-
-modules = []
-with open('day1_input.txt') as f:
-    for line in f:
-        modules.append(int(line))
 
 
 def fuel_required(mass):
@@ -37,9 +33,16 @@ def total_fuel_required(mass):
     return total
 
 
-if __name__ == "__main__":
-    import doctest
-    doctest.testmod()
+def main():
+    modules = []
+    with open('day1_input.txt') as f:
+        for line in f:
+            modules.append(int(line))
 
     print(sum(fuel_required(m) for m in modules))
     print(sum(total_fuel_required(m) for m in modules))
+
+
+if __name__ == "__main__":
+    doctest.testmod()
+    main()
