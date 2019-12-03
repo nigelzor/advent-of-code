@@ -37,6 +37,12 @@ def main():
     with open('day2_input.txt') as f:
         initial_program = [int(x) for x in f.readlines()[0].split(',')]
 
+    program = initial_program.copy()
+    program[1] = 12
+    program[2] = 2
+    done = simulate(program)
+    print(done[0])
+
     for noun in range(0, 100):
         for verb in range(0, 100):
             program = initial_program.copy()
