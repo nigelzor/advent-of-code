@@ -22,9 +22,7 @@ def decode(intcode):
 class Simulator:
     def __init__(self, program, inputs=None):
         self.program = program
-        self.program.extend(0 for _ in range(1000))
         self.ip = 0
-        self.rb = 0
         self.inputs = iter(inputs or [])
 
     def run_to_completion(self, inputs=None):
@@ -56,20 +54,15 @@ class Simulator:
                     return self.program[value]
                 elif mode == 1:
                     return value
-                elif mode == 2:
-                    return self.program[value + self.rb]
                 else:
                     raise Exception("Invalid mode {} at {}:{}".format(mode, self.ip, self.program[self.ip]))
 
             def out_arg(n, value):
                 mode = inst[n]
-                addr = self.program[self.ip + n]
-                if mode == 0:
-                    self.program[addr] = value
-                elif mode == 2:
-                    self.program[addr + self.rb] = value
-                else:
+                if mode != 0:
                     raise Exception("Invalid mode {} at {}:{}".format(mode, self.ip, self.program[self.ip]))
+                addr = self.program[self.ip + n]
+                self.program[addr] = value
 
             if op == 1:
                 a = in_arg(1)
@@ -112,10 +105,6 @@ class Simulator:
                 b = in_arg(2)
                 out_arg(3, int(a == b))
                 self.ip += 4
-            elif op == 9:
-                a = in_arg(1)
-                self.rb += a
-                self.ip += 2
             elif op == 99:
                 return
             else:
@@ -123,16 +112,35 @@ class Simulator:
 
 
 def main():
-    with open('day9_input.txt') as f:
+    with open('day7_input.txt') as f:
         initial_program = [int(x) for x in f.readlines()[0].split(',')]
 
-    test_program = Simulator(initial_program.copy())
-    out = test_program.run_to_completion([1])
-    print(out)
+    options = []
+    for order in itertools.permutations(range(5)):
+        last_out = 0
+        for phase in order:
+            program = Simulator(initial_program.copy())
+            last_out = program.run_to_output([phase, last_out])
+        options.append((last_out, order))
+    print(max(options))
 
-    boost_program = Simulator(initial_program.copy())
-    out = boost_program.run_to_completion([2])
-    print(out)
+    options = []
+    for order in itertools.permutations(range(5, 10)):
+        programs = [Simulator(initial_program.copy(), [phase]) for phase in order]
+        inputs = [0 for _ in order]
+
+        while True:
+            for i in range(5):
+                out = programs[i].run_to_output([inputs[i]])
+                if out is None:
+                    break
+                else:
+                    inputs[(i + 1) % 5] = out
+            else:
+                continue
+            break
+        options.append((inputs[0], order))
+    print(max(options))
 
 
 if __name__ == "__main__":
