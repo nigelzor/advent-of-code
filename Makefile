@@ -1,4 +1,5 @@
 CFLAGS += -fsanitize=address
+CPPFLAGS += -fsanitize=address
 
 .PHONY: all
 all: .libs 2018/day5 2018/day19 2018/day21

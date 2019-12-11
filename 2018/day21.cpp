@@ -1,7 +1,10 @@
-#include <stdio.h>
+#include <cstdio>
+#include <set>
 
 int main() {
-    int r0 = 3115806, r4 = 0, r5 = 0;
+    std::set<int> seen;
+    int previous = 0;
+    int r4 = 0, r5 = 0;
     r5 = 123;
     while (1) {
         r5 = r5 & 456;
@@ -24,10 +27,15 @@ int main() {
             }
             r4 = r4 / 256;
         }
-        printf("checking %i == %i\n", r5, r0);
-        if (r5 == r0) {
+        if (seen.empty()) {
+            printf("first: %i\n", r5);
+        }
+        if (!seen.insert(r5).second) {
+            printf("last: %i\n", previous);
+            printf("duplicate: %i\n", r5);
             break;
         }
+        previous = r5;
     }
     puts("exiting");
     return 0;
