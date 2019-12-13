@@ -1,5 +1,8 @@
 import doctest
 import re
+from copy import deepcopy
+
+import math
 from itertools import combinations
 
 p = re.compile(r'<x=(-?\d+), y=(-?\d+), z=(-?\d+)>')
@@ -21,6 +24,8 @@ def main():
         for line in f:
             x, y, z = [int(v) for v in p.match(line).groups()]
             moons.append(Moon((x, y, z)))
+
+    initial_moons = deepcopy(moons)
 
     def advance():
         for a, b in combinations(moons, 2):
@@ -46,11 +51,27 @@ def main():
         ke = sum(abs(x) for x in moon.velocity)
         return pe * ke
 
-    for s in range(1, 1001):
+    s = 0
+    cycles = [None, None, None]
+    print_moons(s)
+    while any(c is None for c in cycles):
         advance()
-        print_moons(s)
+        s += 1
 
-    print('s={}, total_energy: {}'.format(s, sum(total_energy(m) for m in moons)))
+        if s == 1000:
+            print('s={}, total_energy: {}'.format(s, sum(total_energy(m) for m in moons)))
+
+        for d in range(3):
+            if cycles[d] is None:
+                if all(moons[m].position[d] == initial_moons[m].position[d]
+                       and moons[m].velocity[d] == initial_moons[m].velocity[d] for m in range(len(moons))):
+                    cycles[d] = s
+
+    def lcm(a, b):
+        return a // math.gcd(a, b) * b
+
+    print(cycles)
+    print(lcm(lcm(cycles[0], cycles[1]), cycles[2]))
 
 
 if __name__ == "__main__":
