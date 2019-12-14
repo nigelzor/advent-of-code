@@ -1,4 +1,5 @@
 import doctest
+import math
 import re
 from collections import defaultdict
 
@@ -26,18 +27,12 @@ def main():
             ops.append((parse(outputs), tuple(parse(i) for i in inputs)))
 
     def subtract(d, t, n):
-        if n == 0:
-            return d
-        dd = d.copy()
-        dd[t] -= n
-        return dd
+        d[t] -= n
+        return d
 
     def add(d, t, n):
-        if n == 0:
-            return d
-        dd = d.copy()
-        dd[t] += n
-        return dd
+        d[t] += n
+        return d
 
     def consume(d, t, n):
         c = d[t]
@@ -58,13 +53,14 @@ def main():
             (produce_n, produce_t), inputs = op
             if produce_t == t:
                 cost = 0
-                while n > 0:
-                    for input in inputs:
-                        sc, excess = produce(input, excess)
-                        cost += sc
-                    n -= produce_n
-                if n < 0:
-                    excess = add(excess, produce_t, -n)
+                mult = 1
+                if n > produce_n:
+                    mult = int(math.ceil(n / float(produce_n)))
+                for in_n, in_t in inputs:
+                    sc, excess = produce((in_n * mult, in_t), excess)
+                    cost += sc
+                extra = (produce_n * mult) - n
+                excess = add(excess, produce_t, extra)
                 # print('out', cost, excess)
                 return cost, excess
 
@@ -72,6 +68,28 @@ def main():
 
     total = produce((1, 'FUEL'), defaultdict(int))
     print(total[0])
+
+
+    limit = 1000000000000
+    hi = 1024
+    lo = 1
+
+    n = hi
+    while True:
+        total = produce((n, 'FUEL'), defaultdict(int))[0]
+        print(n, '=', total)
+        if total < limit:
+            lo = n
+            if n == hi:
+                n *= 2
+                hi = n
+            else:
+                n = mid(lo, hi)
+                if n == lo:
+                    break
+        elif total > limit:
+            hi = n
+            n = mid(lo, hi)
 
 
 if __name__ == "__main__":
