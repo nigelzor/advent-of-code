@@ -1,6 +1,7 @@
 import doctest
-import random
 import itertools
+import copy
+import networkx as nx
 
 
 def decode(intcode):
@@ -132,10 +133,7 @@ def display(screen):
     for y in range(miny, maxy + 1):
         y *= 1j
         for x in range(minx, maxx + 1):
-            if x == 0 and y == 0:
-                print('_', end='')
-            else:
-                print(screen.get(x + y, '?'), end='')
+            print(screen.get(x + y, '?'), end='')
         print()
 
 
@@ -151,33 +149,34 @@ def main():
     with open('day15_input.txt') as f:
         initial_program = [int(x) for x in f.readlines()[0].split(',')]
 
+    graph = nx.Graph()
     map = dict()
-    position = 0
-    last_input = [-1]
+    pending = []
+    pending.append((0, Simulator(initial_program.copy())))
 
-    def random_input():
-        while True:
-            options = [k for k, v in DIRECTIONS.items() if (position + v) not in map]
-            if not options:
-                options = [k for k, v in DIRECTIONS.items() if map.get(position + v, None) != 'W']
-            last_input[0] = random.choice(options)
-            yield last_input[0]
-
-    program = Simulator(initial_program.copy(), random_input())
-    for _ in range(1000000):
-        r = program.run_to_output()
-        if r == 0:
-            map[position + DIRECTIONS[last_input[0]]] = 'W'
-        elif r == 1:
-            map[position + DIRECTIONS[last_input[0]]] = ' '
-            position += DIRECTIONS[last_input[0]]
-        elif r == 2:
-            map[position + DIRECTIONS[last_input[0]]] = 'O'
-            position += DIRECTIONS[last_input[0]]
-        else:
-            raise Exception('What {}'.format(r))
+    while pending:
+        position, program = pending.pop()
+        for i, d in DIRECTIONS.items():
+            if (position + d) not in map:
+                subprogram = copy.deepcopy(program)
+                response = subprogram.run_to_output([i])
+                if response == 0:
+                    map[position + d] = '#'
+                elif response == 1:
+                    map[position + d] = ' '
+                    graph.add_edge(position, position + d)
+                    pending.append((position + d, subprogram))
+                elif response == 2:
+                    map[position + d] = 'O'
+                    graph.add_edge(position, position + d)
+                    pending.append((position + d, subprogram))
+                else:
+                    raise Exception('unhandled response {}'.format(response))
 
     display(map)
+
+    goal = next(k for k, v in map.items() if v == 'O')
+    print('steps required:', nx.shortest_path_length(graph, 0, goal))
 
     minute = 0
     while ' ' in map.values():
@@ -189,8 +188,7 @@ def main():
                     if next_map.get(k + f, None) == ' ':
                         next_map[k + f] = 'O'
         map = next_map
-
-    print('oxygenated at minute', minute)
+    print('minutes to oxygenate:', minute)
 
 
 if __name__ == "__main__":
