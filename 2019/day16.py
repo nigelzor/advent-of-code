@@ -1,5 +1,4 @@
 import doctest
-from time import time
 from itertools import islice
 
 
@@ -27,7 +26,7 @@ def pattern_generator(n):
     """
     g = pattern_generator_0(n)
     next(g)
-    yield from g
+    return g
 
 
 def fft(signal):
@@ -37,15 +36,38 @@ def fft(signal):
     return output
 
 
-def main():
-    # with open('day14_s.txt') as f:
-    with open('day16_input.txt') as f:
-        signal = [int(x) for x in f.readline().strip()]
+def fake_fft_tail(signal):
+    total = 0
+    output = []
+    for v in reversed(signal):
+        total = lsd(total + v)
+        output.append(total)
+    output.reverse()
+    return output
 
-    print(signal)
+
+def part1(signal):
     for _ in range(100):
         signal = fft(signal)
-    print(''.join(str(s) for s in signal[:8]))
+    print('1:', ''.join(str(s) for s in signal[:8]))
+
+
+def part2(signal):
+    signal = signal * 10000
+    offset = int(''.join(str(s) for s in signal[:7]))
+
+    for n in range(100):
+        signal = fake_fft_tail(signal)
+    print('2:', ''.join(str(s) for s in signal[offset:offset+8]))
+
+
+def main():
+    with open('day16_input.txt') as f:
+        signal = [int(x) for x in f.readline().strip()]
+        # signal = [int(x) for x in '03036732577212944063491565474664']
+
+    part1(signal)
+    part2(signal)
 
 
 if __name__ == "__main__":
