@@ -1,6 +1,7 @@
 /.libs
 /venv/
 day*.txt
-day5
-day19
-day21
+2018/day5
+2018/day19
+2018/day21
+2019/day12
