@@ -10,54 +10,59 @@ def part1(lines):
     arrivals = [(b, b * math.ceil(earliest / b)) for b in buses]
     best = min(arrivals, key=lambda x: x[1])
     wait = best[1] - earliest
-    print(best[0] * wait)
+    return best[0] * wait
 
 
-def next_arrival(b, o, n):
-    """
-    >>> next_arrival(20, 0, 0)
-    0
-    >>> next_arrival(20, 0, 1)
-    20
-    >>> next_arrival(20, 2, 0)
-    18
-    >>> next_arrival(20, 2, 18)
-    18
-    >>> next_arrival(20, 2, 19)
-    38
-    """
-    return b * math.ceil((n + o) / b) - o
+class Wheel:
+    def __init__(self, b, o):
+        self.b = b
+        self.o = o
 
+    def next_arrival(self, n):
+        """
+         >>> Wheel(20, 0).next_arrival(0)
+         0
+         >>> Wheel(20, 0).next_arrival(1)
+         20
+         >>> Wheel(20, 2).next_arrival(0)
+         18
+         >>> Wheel(20, 2).next_arrival(18)
+         18
+         >>> Wheel(20, 2).next_arrival(19)
+         38
+         """
+        return self.b * math.ceil((n + self.o) / self.b) - self.o
 
-def wheel(b, o):
-    """
-    >>> list(islice(wheel(10, 0), 3))
-    [10, 20, 30]
-    >>> list(islice(wheel(7, 2), 3))
-    [5, 12, 19]
-    """
-    return count(b - o, b)
+    def __iter__(self):
+        """
+        >>> list(islice(Wheel(10, 0), 3))
+        [10, 20, 30]
+        >>> list(islice(Wheel(7, 2), 3))
+        [5, 12, 19]
+        """
+        return count(self.b - self.o, self.b)
 
 
 def combine_wheels_slow(a, b):
     """
-    >>> list(islice(combine_wheels_slow(wheel(7, 2), wheel(3, 0)), 3))
+    >>> list(islice(combine_wheels_slow(Wheel(7, 2), Wheel(3, 0)), 3))
     [12, 33, 54]
     """
-    la = next(a)
-    lb = next(b)
+    ia = iter(a)
+    la = next(ia)
+    lb = next(iter(b))
     while True:
         if la == lb:
             yield la
-        if la < lb:
-            la = next(a)
+        if la <= lb:
+            la = next(ia)
         else:
-            lb = next(b)
+            lb = b.next_arrival(la)
 
 
 def combine_wheels_fast(a, b):
     """
-    >>> list(islice(combine_wheels_fast(wheel(7, 2), wheel(3, 0)), 3))
+    >>> list(islice(combine_wheels_fast(Wheel(7, 2), Wheel(3, 0)), 3))
     [12, 33, 54]
     """
     slow = list(islice(combine_wheels_slow(a, b), 4))
@@ -86,7 +91,7 @@ def part2(line1):
     buses = [(int(b), offset) for offset, b in enumerate(line1.split(',')) if b != 'x']
     buses.sort(key=lambda b: -b[0])
 
-    wheels = [wheel(b, o) for b, o in buses]
+    wheels = [Wheel(b, o) for b, o in buses]
     final = None
     for w in wheels:
         if final is None:
@@ -100,8 +105,8 @@ def main():
     with open('day13_input.txt') as file:
         lines = file.readlines()
 
-    # part1(lines)
-    # part2(lines[1])
+    print(part1(lines))
+    print(part2(lines[1]))
 
 
 if __name__ == "__main__":
