@@ -1,4 +1,5 @@
 import doctest
+from collections import defaultdict
 
 INACTIVE = '.'
 ACTIVE = '#'
@@ -15,22 +16,19 @@ def add_vec(a, b):
 
 def run_to_end(map, adjacency):
     for _ in range(6):
-        next_map = map.copy()
-        possible = set()
+        next_map = dict()
+        possible = defaultdict(int)
         for k, v in map.items():
             count = 0
             for a in adjacency(k):
                 if map.get(a, INACTIVE) == ACTIVE:
                     count += 1
                 else:
-                    possible.add(a)
+                    possible[a] += 1
             if count == 2 or count == 3:
                 next_map[k] = ACTIVE
-            else:
-                del next_map[k]
-        for k in possible:
-            count = sum(1 for a in adjacency(k) if map.get(a, INACTIVE) == ACTIVE)
-            if count == 3:
+        for k, c in possible.items():
+            if c == 3:
                 next_map[k] = ACTIVE
 
         map = next_map
