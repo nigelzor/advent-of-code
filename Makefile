@@ -5,14 +5,13 @@ all: .libs 2018/day5 2018/day19 2018/day21
 
 venv:
 	python3 -m venv venv
-	venv/bin/pip install --upgrade pip setuptools wheel
+	venv/bin/pip install --upgrade pip setuptools wheel pip-tools
 
-requirements.txt: requirements-to-freeze.txt venv
-	venv/bin/pip install -r requirements-to-freeze.txt --upgrade
-	venv/bin/pip freeze -r requirements-to-freeze.txt > requirements.txt
+requirements.txt: requirements.in venv
+	venv/bin/pip-compile
 
 .libs: venv requirements.txt
-	venv/bin/pip install -r requirements.txt
+	venv/bin/pip-sync requirements.txt
 	touch .libs
 
 .PHONY: lint
