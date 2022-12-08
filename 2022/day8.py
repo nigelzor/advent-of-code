@@ -1,5 +1,10 @@
 import doctest
 
+UP = -1j
+DOWN = 1j
+LEFT = -1
+RIGHT = 1
+
 def main():
     grid = dict()
     maxx = 0
@@ -13,40 +18,39 @@ def main():
             for x, h in enumerate(line):
                 if x > maxx:
                     maxx = x
-                grid[(x, y)] = int(h)
+                grid[x + y * 1j] = int(h)
 
-    def right_from(x, y):
-        return ((x2, y) for x2 in range(x + 1, maxx + 1))
-    def left_from(x, y):
-        return ((x2, y) for x2 in range(x - 1, -1, -1))
-    def up_from(x, y):
-        return ((x, y2) for y2 in range(y - 1, -1, -1))
-    def down_from(x, y):
-        return ((x, y2) for y2 in range(y + 1, maxy + 1))
+    def travel(start, direction, inclusive=True):
+        position = start
+        if not inclusive:
+            position += direction
+        while position in grid:
+            yield position
+            position += direction
 
     visible = set()
     def collect_visible(edge, direction):
-        for (x, y) in edge:
+        for start in edge:
             maxh = -1
-            for position in direction(x, y):
+            for position in travel(start, direction):
                 h = grid[position]
                 if h > maxh:
                     maxh = h
                     visible.add(position)
 
-    top_edge = ((x, -1) for x in range(0, maxx + 1))
-    bottom_edge = ((x, maxy + 1) for x in range(0, maxx + 1))
-    left_edge = ((-1, y) for y in range(0, maxy + 1))
-    right_edge = ((maxx + 1, y) for y in range(0, maxy + 1))
+    top_edge = travel(0, RIGHT)
+    bottom_edge = travel(maxy * 1j, RIGHT)
+    left_edge = travel(0, DOWN)
+    right_edge = travel(maxx, DOWN)
 
-    collect_visible(top_edge, down_from)
-    collect_visible(bottom_edge, up_from)
-    collect_visible(left_edge, right_from)
-    collect_visible(right_edge, left_from)
+    collect_visible(top_edge, DOWN)
+    collect_visible(bottom_edge, UP)
+    collect_visible(left_edge, RIGHT)
+    collect_visible(right_edge, LEFT)
 
     # for y in range(0, maxy + 1):
     #     for x in range(0, maxx + 1):
-    #         if (x, y) in visible:
+    #         if (x + y * 1j) in visible:
     #             print('v', end='')
     #         else:
     #             print(' ', end='')
@@ -54,12 +58,12 @@ def main():
 
     print(len(visible))
 
-    def scenic_score(x, y):
-        treehouse_height = grid[(x, y)]
+    def scenic_score(start):
+        treehouse_height = grid[start]
         s = 1
-        for direction in [right_from, left_from, up_from, down_from]:
+        for direction in [UP, DOWN, LEFT, RIGHT]:
             visible = 0
-            for position in direction(x, y):
+            for position in travel(start, direction, inclusive=False):
                 tree_height = grid[position]
                 visible += 1
                 if tree_height >= treehouse_height:
@@ -67,7 +71,7 @@ def main():
             s *= visible
         return s
 
-    print(max(scenic_score(x, y) for x in range(0, maxx + 1) for y in range(0, maxy + 1)))
+    print(max(scenic_score(p) for p in grid.keys()))
 
 
 if __name__ == "__main__":
