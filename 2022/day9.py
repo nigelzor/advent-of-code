@@ -19,21 +19,27 @@ tail_movements = list(directions.values()) + diagonals
 
 def main():
     visited = set()
-    head = 0
-    tail = 0
+    segments = [0+0j] * 10
 
     def print_grid():
-        for y in range(int(min(p.imag for p in visited)), int(max(p.imag for p in visited)) + 1):
-            for x in range(int(min(p.real for p in visited)), int(max(p.real for p in visited)) + 1):
+        def all_ys():
+            return [int(p.imag) for p in visited] + [int(p.imag) for p in segments]
+
+        def all_xs():
+            return [int(p.real) for p in visited] + [int(p.real) for p in segments]
+
+        for y in range(min(all_ys()) - 1, max(all_ys()) + 2):
+            for x in range(min(all_xs()) - 1, max(all_xs()) + 2):
                 p = x + y * 1j
-                if head == p:
-                    print('H', end='')
-                elif tail == p:
-                    print('T', end='')
-                elif p in visited:
-                    print('#', end='')
+                for i, ip in enumerate(segments):
+                    if ip == p:
+                        print(i, end='')
+                        break
                 else:
-                    print('.', end='')
+                    if p in visited:
+                        print('#', end='')
+                    else:
+                        print('.', end='')
             print()
 
     with open('day9_input.txt') as f:
@@ -44,12 +50,24 @@ def main():
 
             while steps > 0:
                 steps -= 1
-                head += direction
-                adjacent_to_tail = set(tail + d for d in tail_movements)
-                if head != tail and head not in adjacent_to_tail:
-                    adjacent_to_head = set(head + d for d in head_movements)
-                    tail = next(iter(adjacent_to_head & adjacent_to_tail))
-                visited.add(tail)
+                segments[0] += direction
+                for i in range(0, len(segments) - 1):
+                    head = segments[i]
+                    tail = segments[i + 1]
+                    adjacent_to_tail = set(tail + d for d in tail_movements)
+                    if head != tail and head not in adjacent_to_tail:
+                        # print('moving', i, 'from', tail, 'towards', head)
+                        adjacent_to_head = set(head + d for d in head_movements)
+                        if adjacent_to_head & adjacent_to_tail:
+                            segments[i + 1] = next(iter(adjacent_to_head & adjacent_to_tail))
+                        else:
+                            adjacent_to_head = set(head + d for d in tail_movements)
+                            segments[i + 1] = next(iter(adjacent_to_head & adjacent_to_tail))
+
+                visited.add(segments[len(segments) - 1])
+            # print()
+            # print(line)
+            # print_grid()
 
     print(len(visited))
 
