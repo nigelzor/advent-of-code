@@ -48,14 +48,16 @@ def main():
     maxy = max(int(c.imag) for c in grid.keys())
     done = False
 
+    for x in range(-1000, 1000):
+        grid[x + (maxy + 2) * 1j] = '#'
+
     while not done and grid.get(start, '.') == '.':
         position = start
         while True:
-            if position.imag > maxy:
-                print('falling off bottom')
-                done = True
-                break
-
+            # if position.imag > maxy:
+            #     print('falling off bottom')
+            #     done = True
+            #     break
             if grid.get(position + 1j, '.') == '.':
                 position += 1j
             elif grid.get(position - 1 + 1j, '.') == '.':
@@ -66,7 +68,7 @@ def main():
                 grid[position] = 'O'
                 break
 
-        # print_grid(grid)
+    # print_grid(grid)
 
     print(sum(1 for v in grid.values() if v == 'O'))
 
