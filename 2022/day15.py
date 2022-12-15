@@ -1,27 +1,60 @@
 import doctest
 import re
+from dataclasses import dataclass
+from typing import List
 
 
-def print_grid(grid):
-    minx = min(int(c.real) for c in grid.keys())
-    maxx = max(int(c.real) for c in grid.keys())
-    miny = min(int(c.imag) for c in grid.keys())
-    maxy = max(int(c.imag) for c in grid.keys())
-
-    for y in range(miny, maxy + 1):
-        for x in range(minx, maxx + 1):
-            print(grid.get(x + y * 1j, '.'), end='')
-        print('')
+@dataclass(frozen=True)
+class Point:
+    x: int
+    y: int
 
 
-def manhattan(a, b):
-    return int(abs(a.real - b.real) + abs(a.imag - b.imag))
+def manhattan(a: Point, b: Point):
+    return abs(a.x - b.x) + abs(a.y - b.y)
 
 
-def diamond(start, distance):
-    for y in range(-distance, distance + 1):
-        for x in range(-(distance - abs(y)), (distance - abs(y)) + 1):
-            yield start + x + y * 1j
+def range_union(self: range, other: range):
+    """
+    >>> range_union(range(0, 2), range(1, 3))
+    range(0, 3)
+    >>> range_union(range(0, 2), range(2, 4))
+    range(0, 4)
+    >>> range_union(range(0, 1), range(2, 3))
+    """
+    # overlapping ranges
+    if other.start in self:
+        if other.stop > self.stop:
+            return range(self.start, other.stop)
+        return self
+    if self.start in other:
+        if self.stop > other.stop:
+            return range(other.start, self.stop)
+        return other
+    # adjoining ranges
+    if other.start == self.stop:
+        return range(self.start, other.stop)
+    if self.start == other.stop:
+        return range(other.start, self.stop)
+    # disjoint
+    return None
+
+
+def append_range(ranges: List[range], new_range: range):
+    """
+    >>> append_range(append_range([], range(0, 1)), range(1, 2))
+    [range(0, 2)]
+    """
+    for r in ranges:
+        u = range_union(r, new_range)
+        if u:
+            if u != r:
+                ranges.remove(r)
+                append_range(ranges, u)
+            break
+    else:
+        ranges.append(new_range)
+    return ranges
 
 
 def main():
@@ -30,47 +63,44 @@ def main():
 
     p = re.compile(r'Sensor at x=(-?\d+), y=(-?\d+): closest beacon is at x=(-?\d+), y=(-?\d+)')
     with open('day15_input.txt') as f:
-    # with open('day15_sample.txt') as f:
         for line in f:
             match = p.match(line)
             if match:
                 [sx, sy, bx, by] = [int(v) for v in match.groups()]
-                sensor = sx + sy * 1j
-                beacon = bx + by * 1j
+                sensor = Point(sx, sy)
+                beacon = Point(bx, by)
                 distance = manhattan(sensor, beacon)
                 sensors[sensor] = distance
                 beacons[beacon] = True
 
-    minx = int(min(k.real - v for k, v in sensors.items()))
-    maxx = int(max(k.real + v for k, v in sensors.items()))
+    def collect_ranges(y):
+        ranges = []
+        for sensor, strength in sensors.items():
+            # print('sensor at', sensor, 'with strength', strength)
+            rows_away = abs(y - sensor.y)
+            # print(rows_away, 'rows away; effective strength', strength - rows_away)
+            strength -= rows_away
+            if strength >= 0:
+                contribution = range(sensor.x - strength, sensor.x + strength + 1)
+                append_range(ranges, contribution)
+                # print('+', contribution, '=', ranges.ranges)
+        return ranges
 
-    def in_range_of_sensor(pos):
-        return any(manhattan(pos, k) <= v for k, v in sensors.items())
+    # In the row where y=2000000, how many positions cannot contain a beacon?
+    row = 2000000
+    print(sum(len(r) for r in collect_ranges(row)) - sum(1 for b in beacons if b.y == row))  # 4665948
 
-    def not_a_beacon(pos):
-        return pos not in beacons and in_range_of_sensor(pos)
-
-    def unknown(pos):
-        return pos not in beacons and not in_range_of_sensor(pos)
-
+    # Find the only possible position for the distress beacon. What is its tuning frequency?
     limit = 4000000
-    # limit = 20
-    for y in range(0, limit + 1):
-        if y % 1000 == 0:
-            print(y)
-        x = 0
-        while x <= limit:
-            pos = x + y * 1j
-            for sensor, strength in sensors.items():
-                distance_to_beacon = manhattan(pos, sensor)
-                if distance_to_beacon <= strength:
-                    x += (strength - distance_to_beacon) + 1
-                    break
-            else:
-                if unknown(pos):
-                    print(pos)
-                    print(4000000 * int(pos.real) + int(pos.imag))
-                    return
+    xs = range(0, limit + 1)
+    ys = range(0, limit + 1)
+    for y in ys:
+        ranges = collect_ranges(y)
+        for r in ranges:
+            if range_union(r, xs) != r:
+                x = min(ranges, key=lambda r: r.start).stop
+                print(4000000 * x + y)  # 13543690671045
+                return
 
 
 if __name__ == "__main__":
