@@ -14,6 +14,10 @@ def print_grid(grid):
         print('')
 
 
+def manhattan(a, b):
+    return int(abs(a.real - b.real) + abs(a.imag - b.imag))
+
+
 def diamond(start, distance):
     for y in range(-distance, distance + 1):
         for x in range(-(distance - abs(y)), (distance - abs(y)) + 1):
@@ -21,7 +25,8 @@ def diamond(start, distance):
 
 
 def main():
-    grid = dict()
+    sensors = dict()
+    beacons = dict()
 
     p = re.compile(r'Sensor at x=(-?\d+), y=(-?\d+): closest beacon is at x=(-?\d+), y=(-?\d+)')
     with open('day15_input.txt') as f:
@@ -29,24 +34,23 @@ def main():
             match = p.match(line)
             if match:
                 [sx, sy, bx, by] = [int(v) for v in match.groups()]
-                distance = abs(sx - bx) + abs(sy - by)
                 sensor = sx + sy * 1j
                 beacon = bx + by * 1j
-                for pos in diamond(sensor, distance):
-                    if pos not in grid:
-                        grid[pos] = '#'
-                grid[sensor] = 'S'
-                grid[beacon] = 'B'
+                distance = manhattan(sensor, beacon)
+                sensors[sensor] = distance
+                beacons[beacon] = True
 
-    print_grid(grid)
+    minx = int(min(k.real - v for k, v in sensors.items()))
+    maxx = int(max(k.real + v for k, v in sensors.items()))
 
-    minx = int(min(p.real for p in grid.keys()))
-    maxx = int(max(p.real for p in grid.keys()))
+    def in_range_of_sensor(pos):
+        return any(manhattan(pos, k) <= v for k, v in sensors.items())
+
+    def not_a_beacon(pos):
+        return pos not in beacons and in_range_of_sensor(pos)
 
     y = 2000000
-    print(sum(1 for x in range(minx, maxx + 1) if grid.get(x + y * 1j, '.') == '#'))
-
-
+    print(sum(1 for x in range(minx, maxx + 1) if not_a_beacon(x + y * 1j)))
 
 
 if __name__ == "__main__":
