@@ -30,6 +30,7 @@ def main():
 
     p = re.compile(r'Sensor at x=(-?\d+), y=(-?\d+): closest beacon is at x=(-?\d+), y=(-?\d+)')
     with open('day15_input.txt') as f:
+    # with open('day15_sample.txt') as f:
         for line in f:
             match = p.match(line)
             if match:
@@ -49,8 +50,27 @@ def main():
     def not_a_beacon(pos):
         return pos not in beacons and in_range_of_sensor(pos)
 
-    y = 2000000
-    print(sum(1 for x in range(minx, maxx + 1) if not_a_beacon(x + y * 1j)))
+    def unknown(pos):
+        return pos not in beacons and not in_range_of_sensor(pos)
+
+    limit = 4000000
+    # limit = 20
+    for y in range(0, limit + 1):
+        if y % 1000 == 0:
+            print(y)
+        x = 0
+        while x <= limit:
+            pos = x + y * 1j
+            for sensor, strength in sensors.items():
+                distance_to_beacon = manhattan(pos, sensor)
+                if distance_to_beacon <= strength:
+                    x += (strength - distance_to_beacon) + 1
+                    break
+            else:
+                if unknown(pos):
+                    print(pos)
+                    print(4000000 * int(pos.real) + int(pos.imag))
+                    return
 
 
 if __name__ == "__main__":
