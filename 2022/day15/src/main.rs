@@ -3,6 +3,7 @@ use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io;
 use std::io::BufRead;
+use rayon::prelude::*;
 
 #[derive(Clone, Copy, Hash, Eq, PartialEq)]
 struct Point {
@@ -137,15 +138,16 @@ pub fn main() {
         start: 0,
         stop: 4000001,
     };
-    for y in 0..4000001 {
+    let part2 = (0..=4000000).into_par_iter().find_map_any(|y| {
         let mut ranges = collect_ranges(&sensors, y);
         ranges.sort_by_key(|r| r.start);
         for r in ranges {
             if r.union(xs) != Some(r) {
                 let x = r.stop;
-                println!("{}", 4000000 * (x as i64) + (y as i64));
-                return;
+                return Some(Point{ x, y });
             }
         }
-    }
+        return None;
+    }).unwrap();
+    println!("{}", 4000000 * (part2.x as i64) + (part2.y as i64));
 }
