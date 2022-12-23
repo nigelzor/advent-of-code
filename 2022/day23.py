@@ -81,6 +81,7 @@ def main():
             else:
                 idle.append((k, v))
 
+        moved = False
         next_grid = dict()
         for k, v in idle:
             next_grid[k] = v
@@ -88,12 +89,13 @@ def main():
             if len(elves) == 1:
                 k, v = elves[0]
                 next_grid[destination] = v
+                moved = True
             else:
                 for k, v in elves:
                     next_grid[k] = v
 
         assert(len(next_grid) == len(grid))
-        return next_grid
+        return next_grid, moved
 
     initial_directions = [(N, NORTHISH), (S, SOUTHISH), (W, WESTISH), (E, EASTISH)]
     order = itertools.cycle(initial_directions)
@@ -103,15 +105,19 @@ def main():
         next(order)
         return result
 
-    for r in range(10):
+    for r in range(1, 1000):
         # print(f'Round {r+1}')
-        grid = round(grid, next_order())
-        # print_grid()
+        grid, moved = round(grid, next_order())
 
-    minx, maxx, miny, maxy = bounds()
-    width = maxx - minx + 1
-    height = maxy - miny + 1
-    print(width * height - len(grid))  # 3925
+        if r == 10:
+            minx, maxx, miny, maxy = bounds()
+            width = maxx - minx + 1
+            height = maxy - miny + 1
+            print('part1:', width * height - len(grid))  # 3925
+
+        if not moved:
+            print('part2:', r)
+            break
 
 
 if __name__ == "__main__":
