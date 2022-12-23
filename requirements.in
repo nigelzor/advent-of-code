@@ -2,3 +2,4 @@ decorator
 networkx
 matplotlib
 flake8
+z3-solver
