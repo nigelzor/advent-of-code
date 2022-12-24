@@ -1,8 +1,73 @@
 import doctest
+import itertools
 import re
 from dataclasses import dataclass
 from typing import List, Set, Tuple
 import heapq
+import networkx as nx
+
+TIME_LIMIT = 26
+N_ACTORS = 2
+INPUT_FILE = 'day16_input.txt'
+
+
+@dataclass(order=True, frozen=True)
+class Actor:
+    location: str
+    in_transit: int
+
+
+@dataclass(order=True, unsafe_hash=True)
+class State:
+    actors: Tuple[Actor]
+    open_valves: Tuple
+    minute: int
+    released: int
+    flow_rate: int
+
+    # parent = None
+
+    def successors(self, rates, relevant_valves, shortest_paths):
+        next_minute = self.minute + 1
+        next_released = self.released + self.flow_rate
+
+        def actor_options(actor: Actor):
+            if actor.in_transit:
+                return [(Actor(actor.location, actor.in_transit - 1), None)]
+
+            if rates[actor.location] > 0 and actor.location not in self.open_valves:
+                return [(actor, actor.location)]
+
+            valves_to_open = [v for v in relevant_valves if v != actor.location and v not in self.open_valves]
+            if not valves_to_open:
+                return [(actor, None)]
+            else:
+                return [(Actor(v, shortest_paths[actor.location][v] - 1), None) for v in valves_to_open]
+
+        for options in itertools.product(*[actor_options(a) for a in self.actors]):
+            next_actors = tuple(a for a, _ in options)
+            next_open_valves = self.open_valves
+            next_flow_rate = self.flow_rate
+            if any(v for _, v in options):
+                opened = tuple(set(v for _, v in options if v))
+                next_open_valves += opened
+                next_flow_rate += sum(rates[v] for v in opened)
+            next_state = State(next_actors, next_open_valves, next_minute, next_released, next_flow_rate)
+            # next_state.parent = self
+            next_state.fast_forward()
+            yield next_state
+
+    def with_score(self):
+        return -self.released, self
+
+    def fast_forward(self):
+        ff = TIME_LIMIT - self.minute
+        for a in self.actors:
+            ff = min(ff, a.in_transit)
+        if ff > 0:
+            self.actors = tuple(Actor(a.location, a.in_transit - ff) for a in self.actors)
+            self.minute += ff
+            self.released += ff * self.flow_rate
 
 
 def main():
@@ -10,28 +75,8 @@ def main():
     rates = dict()
     connections = dict()
 
-    def flow_rate(state):
-        return sum(rates[r] for r in state.open_valves)
-
-    @dataclass(frozen=True)
-    class State:
-        current_location: str
-        open_valves: Tuple[str]
-        minute: int
-        released: int
-
-        def potential(self):
-            return self.released + flow_rate(self) * (30 - self.minute)
-
-        def __lt__(self, other):
-            if self.potential() > other.potential():
-                return True
-            return False
-
-    initial_state = State('AA', (), 0, 0)
-
     p = re.compile(r'Valve (\w+) has flow rate=(-?\d+); tunnels? leads? to valves? ([\w, ]+)')
-    with open('day16_input.txt') as f:
+    with open(INPUT_FILE) as f:
         for line in f:
             match = p.match(line)
             if match:
@@ -39,35 +84,48 @@ def main():
                 rates[valve] = int(rate)
                 connections[valve] = tunnels.split(', ')
 
-    print(rates)
+    graph = nx.Graph()
+    for v, cs in connections.items():
+        for c in cs:
+            graph.add_edge(v, c, weight=1)
 
-    def possible_states(state: State):
-        next_minute = state.minute + 1
-        next_released = state.released + flow_rate(state)
-        if state.current_location not in state.open_valves and rates[state.current_location] > 0:
-            new_open_valves = state.open_valves + (state.current_location,)
-            yield State(state.current_location, new_open_valves, next_minute, next_released)
-        for c in connections.get(state.current_location, []):
-            yield State(c, state.open_valves, next_minute, next_released)
+    shortest_paths = nx.floyd_warshall(graph)
+    relevant_valves = [valve for valve, rate in rates.items() if rate > 0]
 
-    tested = 0
-    most_released = -1
-    visited_states: Set[State] = set()
-    pending_states: List[State] = [initial_state]
-    while pending_states:
-        best = heapq.heappop(pending_states)
-        if best.minute == 30:
-            tested += 1
-            if best.released > most_released:
-                most_released = best.released
-                print(tested, best)
-        else:
-            for next_state in possible_states(best):
-                if next_state not in visited_states:
-                    visited_states.add(next_state)
-                    heapq.heappush(pending_states, next_state)
+    def find_best(initial):
+        seen = set()
+        unexplored = [initial]
+        # heapq.heappush(unexplored, initial.with_score())
 
-    # not 1592
+        i = 0
+        best = None
+        while unexplored:
+            i += 1
+            # score, state = heapq.heappop(unexplored)
+            state = unexplored.pop()
+            if state.minute == TIME_LIMIT:
+                if best is None or state.released > best.released:
+                    print(f'new best released={state.released}, i={i}')
+                    best = state
+            else:
+                successors = state.successors(rates, relevant_valves, shortest_paths)
+                for s in successors:
+                    if s not in seen:
+                        seen.add(s)
+                        # heapq.heappush(unexplored, s.with_score())
+                        unexplored.append(s)
+        return best
+
+    best_terminal_node = find_best(State((Actor('AA', 0),) * N_ACTORS, (), 0, 0, 0))
+    print(best_terminal_node)
+
+    # best_path = []
+    # while best_terminal_node:
+    #     best_path.append(best_terminal_node)
+    #     best_terminal_node = best_terminal_node.parent
+    #
+    # for node in reversed(best_path):
+    #     print(node)
 
 
 if __name__ == "__main__":
