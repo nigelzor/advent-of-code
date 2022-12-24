@@ -1,10 +1,10 @@
 import doctest
 import functools
+import heapq
 from dataclasses import dataclass
-from collections import deque
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, order=True)
 class Point:
     x: int
     y: int
@@ -62,9 +62,9 @@ def main():
     moving_left = [k for k, v in grid.items() if v == '<']
     moving_right = [k for k, v in grid.items() if v == '>']
 
-    @functools.lru_cache(10)
+    @functools.lru_cache(50)
     def grid_at_t(t):
-        print('build grid', t)
+        # print('build grid', t)
         return set((p + UP * t) % size for p in moving_up) \
                 | set((p + DOWN * t) % size for p in moving_down) \
                 | set((p + LEFT * t) % size for p in moving_left) \
@@ -79,7 +79,7 @@ def main():
             return False
         return position not in next_grid
 
-    @dataclass(frozen=True)
+    @dataclass(frozen=True, order=True)
     class State:
         time: int
         position: Point
@@ -92,23 +92,32 @@ def main():
             next_grid = grid_fn(next_time)
             return [State(next_time, self.position + move) for move in MOVE_OPTIONS if valid_move(next_grid, self.position + move)]
 
+        def with_score(self):
+            distance = self.position.x + self.position.y
+            return (-distance, -self.time), self
 
-    unexplored = deque()
-    unexplored.append(State(0, start))
+
+    seen = set()
+    unexplored = []
+    heapq.heappush(unexplored, State(0, start).with_score())
 
     i = 0
-    while True:
+    fastest = float('inf')
+    while unexplored:
         i += 1
-        state = unexplored.popleft()
-        # print('exploring state', state)
-        if state.position == goal:
-            print(f'reached goal at t={state.time}, i={i}')
-            break
+        score, state = heapq.heappop(unexplored)
+        if state.time >= fastest:
+            pass
+        elif state.position == goal:
+            print(f'reached goal at t={state.time}, i={i}')  # 418 too high
+            fastest = state.time
         else:
             successors = state.successors(grid_at_t)
             # print(f'{len(successors)} successors: {successors}')
             for s in successors:
-                unexplored.append(s)
+                if s not in seen:
+                    seen.add(s)
+                    heapq.heappush(unexplored, s.with_score())
 
 
 if __name__ == "__main__":
