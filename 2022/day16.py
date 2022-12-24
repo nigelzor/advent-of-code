@@ -2,9 +2,10 @@ import doctest
 import itertools
 import re
 from dataclasses import dataclass
-from typing import List, Set, Tuple
+from typing import Tuple
 import heapq
 import networkx as nx
+from collections import defaultdict
 
 TIME_LIMIT = 26
 N_ACTORS = 2
@@ -94,16 +95,27 @@ def main():
 
     def find_best(initial):
         seen = set()
-        unexplored = [initial]
-        # heapq.heappush(unexplored, initial.with_score())
+        unexplored = []
+        heapq.heappush(unexplored, initial.with_score())
+
+        best_at_minute = defaultdict(int)
+        pruned_count = 0
+
+        def prune(state):
+            check_t = state.minute - 2
+            if best_at_minute[check_t] > state.released:
+                return True
+            best_at_minute[state.minute] = max(best_at_minute[state.minute], state.released)
+            return False
 
         i = 0
         best = None
         while unexplored:
             i += 1
-            # score, state = heapq.heappop(unexplored)
-            state = unexplored.pop()
-            if state.minute == TIME_LIMIT:
+            score, state = heapq.heappop(unexplored)
+            if prune(state):
+                pruned_count += 1
+            elif state.minute == TIME_LIMIT:
                 if best is None or state.released > best.released:
                     print(f'new best released={state.released}, i={i}')
                     best = state
@@ -112,8 +124,9 @@ def main():
                 for s in successors:
                     if s not in seen:
                         seen.add(s)
-                        # heapq.heappush(unexplored, s.with_score())
-                        unexplored.append(s)
+                        heapq.heappush(unexplored, s.with_score())
+
+        print(f'pruned {pruned_count}/{i}')
         return best
 
     best_terminal_node = find_best(State((Actor('AA', 0),) * N_ACTORS, (), 0, 0, 0))
