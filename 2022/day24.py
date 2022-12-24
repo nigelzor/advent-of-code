@@ -37,6 +37,9 @@ def bounds(grid):
     maxy = max(c.y for c in grid.keys())
     return minx, maxx, miny, maxy
 
+def manhattan(a: Point, b: Point):
+    return abs(a.x - b.x) + abs(a.y - b.y)
+
 
 def main():
     grid = dict()
@@ -53,9 +56,6 @@ def main():
     size = pt(width, height)
     start = pt(0, -1)
     goal = pt(maxx - 1, maxy)
-    almost_goal = goal + UP
-
-    print(width, height, start, goal)
 
     moving_up = [k for k, v in grid.items() if v == '^']
     moving_down = [k for k, v in grid.items() if v == 'v']
@@ -71,7 +71,7 @@ def main():
                 | set((p + RIGHT * t) % size for p in moving_right)
 
     def valid_move(next_grid, position):
-        if position == start:
+        if position == start or position == goal:
             return True
         if not (0 <= position.x < width):
             return False
@@ -86,38 +86,46 @@ def main():
 
         def successors(self, grid_fn):
             next_time = self.time + 1
-            if self.position == almost_goal:
-                return [State(next_time, goal)]
-
             next_grid = grid_fn(next_time)
             return [State(next_time, self.position + move) for move in MOVE_OPTIONS if valid_move(next_grid, self.position + move)]
 
         def with_score(self):
-            distance = self.position.x + self.position.y
-            return (-distance, -self.time), self
+            distance = manhattan(self.position, goal)
+            return (distance, -self.time), self
 
 
-    seen = set()
-    unexplored = []
-    heapq.heappush(unexplored, State(0, start).with_score())
+    def find_fastest(initial):
+        seen = set()
+        unexplored = []
+        heapq.heappush(unexplored, initial.with_score())
 
-    i = 0
-    fastest = float('inf')
-    while unexplored:
-        i += 1
-        score, state = heapq.heappop(unexplored)
-        if state.time >= fastest:
-            pass
-        elif state.position == goal:
-            print(f'reached goal at t={state.time}, i={i}')  # 418 too high
-            fastest = state.time
-        else:
-            successors = state.successors(grid_at_t)
-            # print(f'{len(successors)} successors: {successors}')
-            for s in successors:
-                if s not in seen:
-                    seen.add(s)
-                    heapq.heappush(unexplored, s.with_score())
+        i = 0
+        fastest = None
+        while unexplored:
+            i += 1
+            score, state = heapq.heappop(unexplored)
+            if fastest is not None and state.time >= fastest.time:
+                pass
+            elif state.position == goal:
+                print(f'reached goal at t={state.time}, i={i}')
+                fastest = state
+            else:
+                successors = state.successors(grid_at_t)
+                # print(f'{len(successors)} successors: {successors}')
+                for s in successors:
+                    if s not in seen:
+                        seen.add(s)
+                        heapq.heappush(unexplored, s.with_score())
+        return fastest
+
+    first = find_fastest(State(0, start))
+    print(first)
+    start, goal = goal, start
+    second = find_fastest(first)
+    print(second)
+    start, goal = goal, start
+    third = find_fastest(second)
+    print(third)
 
 
 if __name__ == "__main__":
