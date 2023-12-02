@@ -16,4 +16,4 @@ requirements.txt: requirements.in venv
 
 .PHONY: lint
 lint:
-	venv/bin/flake8 --ignore=E501 2020/*.py
+	venv/bin/flake8 --ignore=E501 2023/*.py
