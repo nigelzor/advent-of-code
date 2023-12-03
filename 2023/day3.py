@@ -4,8 +4,8 @@ from collections import defaultdict
 
 def main():
     symbols = dict()
-    # line -> (start, length, val)
     parts = defaultdict(list)
+    gears = defaultdict(list)
 
     with open('day3_input.txt') as f:
         y = 0
@@ -29,29 +29,28 @@ def main():
 
     part1 = 0
     for y, ps in parts.items():
-        print(f"on line {y}")
-        for part in ps:
-            (start, length, val) = part
-            print(f"part {val} at {start} ({length})", end='\t')
-
+        for (start, length, val) in ps:
             def has_adjacent_symbol():
+                result = False
                 for yc in (y - 1j, y, y + 1j):
                     for xc in range(start - 1, start + length + 1):
                         s = symbols.get(xc + yc, None)
                         if s:
-                            print(f'found {s} at {xc + yc}')
-                            return True
-                return False
+                            if s == '*':
+                                gears[xc + yc].append(val)
+                            result = True
+                return result
 
             if has_adjacent_symbol():
                 part1 += val
-            else:
-                print(f'not found')
-        # input()
 
-    # too high 597755
-    # too low  547476
-    print(part1)
+    print(f"Part 1: {part1}")
+
+    part2 = 0
+    for gear in gears.values():
+        if len(gear) == 2:
+            part2 += gear[0] * gear[1]
+    print(f"Part 2: {part2}")
 
 
 if __name__ == "__main__":
