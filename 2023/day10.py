@@ -10,6 +10,9 @@ class Point:
     def __add__(self, other):
         return Point(self.x + other.x, self.y + other.y)
 
+    def __mul__(self, other):
+        return Point(self.x * other, self.y * other)
+
 
 N = Point(0, -1)
 S = Point(0, 1)
@@ -38,26 +41,35 @@ def main():
     distances = dict()
     start = None
 
-    def bounds():
-        minx = min(c.x for c in grid.keys())
-        maxx = max(c.x for c in grid.keys())
-        miny = min(c.y for c in grid.keys())
-        maxy = max(c.y for c in grid.keys())
+    def bounds(g):
+        minx = 0
+        maxx = max(c.x for c in g.keys())
+        miny = 0
+        maxy = max(c.y for c in g.keys())
         return minx, maxx, miny, maxy
 
-    def print_grid():
-        minx, maxx, miny, maxy = bounds()
+    def print_grid(g):
+        minx, maxx, miny, maxy = bounds(g)
         for y in range(miny, maxy + 1):
             for x in range(minx, maxx + 1):
-                print(grid.get(Point(x, y), '.'), end='')
+                print(g.get(Point(x, y), '.'), end='')
             print('')
 
-    def print_grid_distances():
-        minx, maxx, miny, maxy = bounds()
-        for y in range(miny, maxy + 1):
-            for x in range(minx, maxx + 1):
-                print(distances.get(Point(x, y), '.'), end='')
-            print('')
+    def make_doubled_grid():
+        doubled = dict()
+        for p in distances.keys():
+            a = grid[p]
+            doubled[p * 2] = a
+
+            b = grid.get(p + S)
+            if connects_south(a) and connects_north(b):
+                doubled[p * 2 + S] = '|'
+
+            b = grid.get(p + E)
+            if connects_east(a) and connects_west(b):
+                doubled[p * 2 + E] = '-'
+
+        return doubled
 
     with open('day10_input.txt') as f:
         for y, line in enumerate(f):
@@ -66,8 +78,6 @@ def main():
                     grid[Point(x, y)] = c
                 if c == "S":
                     start = Point(x, y)
-
-    # print_grid()
 
     unexplored = []
 
@@ -80,29 +90,53 @@ def main():
 
     explore(start, 0)
 
-    while unexplored:
-        (point, distance) = unexplored.pop()
+    def connections(point):
         p = grid[point]
         if connects_north(p):
             n = point + N
             if connects_south(grid.get(n)):
-                explore(n, distance + 1)
+                yield n
         if connects_south(p):
             s = point + S
             if connects_north(grid.get(s)):
-                explore(s, distance + 1)
+                yield s
         if connects_west(p):
             w = point + W
             if connects_east(grid.get(w)):
-                explore(w, distance + 1)
+                yield w
         if connects_east(p):
             e = point + E
             if connects_west(grid.get(e)):
-                explore(e, distance + 1)
+                yield e
 
-    # print_grid_distances()
-
+    while unexplored:
+        (point, distance) = unexplored.pop()
+        for c in connections(point):
+            explore(c, distance + 1)
     print(f"Part1: {max(distances.values())}")
+
+    minx, maxx, miny, maxy = bounds(grid)
+    dg = make_doubled_grid()
+
+    pending = [Point(0, 0)]
+    while pending:
+        point = pending.pop()
+        if point.x < minx or point.x > maxx * 2 or point.y < miny or point.y > maxy * 2:
+            continue
+        if point not in dg:
+            dg[point] = 'O'
+            pending.append(point + N)
+            pending.append(point + E)
+            pending.append(point + S)
+            pending.append(point + W)
+
+    # print_grid(dg)
+    enclosed = 0
+    for x in range(minx, maxx + 1):
+        for y in range(miny, maxy + 1):
+            if Point(x * 2, y * 2) not in dg:
+                enclosed += 1
+    print(f"Part 2: {enclosed}")
 
 
 if __name__ == "__main__":
