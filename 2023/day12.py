@@ -1,44 +1,48 @@
 import doctest
-import re
-from collections import defaultdict
-
-
-def to_length_map(items):
-    result = defaultdict(int)
-    for item in items:
-        result[len(item)] += 1
-    return result
+import functools
 
 
 def possible_placements(n: int, pattern: str):
-    # """
-    # >>> possible_placements(1, "?")
-    # ['#']
-    # >>> possible_placements(1, '??')
-    # ['#.', '.#']
-    # >>> possible_placements(2, '???')
-    # ['##.', '.##']
-    # >>> possible_placements(1, '???')
-    # ['#.', '.#.', '..#']
-    # >>> possible_placements(1, '????')
-    # ['#.', '.#.', '..#.', '...#']
-    # >>> possible_placements(1, '?#?')
-    # ['.#.']
-    # >>> possible_placements(2, '?#?')
-    # ['##.', '.##']
-    # >>> possible_placements(1, '?#??')
-    # ['.#.']
-    # >>> possible_placements(2, '?#??')
-    # ['##.', '.##.']
-    # >>> possible_placements(2, "?")
-    # []
-    # """
-    p = re.compile(f"(?<!#)(?=[#?]{{{n}}}(?!#))")
-    for m in p.finditer(pattern):
-        start, end = m.span()
+    """
+    >>> list(possible_placements(1, "?"))
+    [('', '')]
+    >>> list(possible_placements(1, '??'))
+    [('', ''), ('', '')]
+    >>> list(possible_placements(2, '???'))
+    [('', ''), ('', '')]
+    >>> list(possible_placements(1, '???'))
+    [('', '?'), ('', ''), ('?', '')]
+    >>> list(possible_placements(1, '????'))
+    [('', '??'), ('', '?'), ('?', ''), ('??', '')]
+    >>> list(possible_placements(1, '?#?'))
+    [('', '')]
+    >>> list(possible_placements(2, '?#?'))
+    [('', ''), ('', '')]
+    >>> list(possible_placements(1, '?#??'))
+    [('', '?'), ('?#', '')]
+    >>> list(possible_placements(2, '?#??'))
+    [('', '?'), ('', '')]
+    >>> list(possible_placements(2, "?"))
+    []
+    """
+    last = len(pattern) - n
+    start = 0
+    while start <= last:
+        if start != 0 and pattern[start - 1] == '#':
+            start += 1
+            continue
+        if start != last and pattern[start + n] == '#':
+            start += 1
+            continue
+        last_dot = pattern.rfind('.', start, start + n)
+        if last_dot >= 0:
+            start = last_dot + 1
+            continue
+
         before = pattern[:max(0, start - 1)]
         after = pattern[start + n + 1:]
-        yield (before, after)
+        yield before, after
+        start += 1
 
 
 def partition_groups(groups):
@@ -58,32 +62,30 @@ def partition_groups(groups):
     return groups[:middle], longest, groups[middle + 1:]
 
 
+@functools.lru_cache(2048)
 def count_placements(pattern, groups):
     """
-    >>> count_placements("", [])
+    >>> count_placements("", ())
     1
-    >>> count_placements(".", [])
+    >>> count_placements(".", ())
     1
-    >>> count_placements("#", [])
+    >>> count_placements("#", ())
     0
-    >>> count_placements("#", [1])
+    >>> count_placements("#", (1,))
     1
-    >>> count_placements("?", [1])
+    >>> count_placements("?", (1,))
     1
-    >>> count_placements("??", [1])
+    >>> count_placements("??", (1,))
     2
-    >>> count_placements("???", [1])
+    >>> count_placements("???", (1,))
     3
-    >>> count_placements("???", [1, 1])
+    >>> count_placements("???", (1, 1))
     1
     """
-
     if len(groups) == 0:
         if '#' in pattern:
             return 0
         return 1
-
-    pattern = pattern.strip('.')
 
     if pattern == '':
         return 0
@@ -100,15 +102,19 @@ def main():
     part1 = 0
     part2 = 0
 
+    inputs = []
     with open('day12_input.txt') as f:
         for line in f:
             pattern, groups = line.strip().split(' ')
-            groups = [int(r) for r in groups.split(',')]
-            print(pattern, groups)
-            part1 += count_placements(pattern, groups)
+            groups = tuple(int(r) for r in groups.split(','))
+            inputs.append((pattern, groups))
 
-            expanded_pattern = '?'.join([pattern] * 5)
-            part2 += count_placements(expanded_pattern, groups * 5)
+    for pattern, groups in inputs:
+        print(pattern, groups)
+        part1 += count_placements(pattern, groups)
+
+        expanded_pattern = '?'.join([pattern] * 5)
+        part2 += count_placements(expanded_pattern, groups * 5)
 
     print(f"Part 1: {part1}")
     print(f"Part 2: {part2}")
