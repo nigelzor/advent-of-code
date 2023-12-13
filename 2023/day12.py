@@ -5,23 +5,23 @@ import functools
 def possible_placements(n: int, pattern: str):
     """
     >>> list(possible_placements(1, "?"))
-    [('', '')]
+    [0]
     >>> list(possible_placements(1, '??'))
-    [('', ''), ('', '')]
+    [0, 1]
     >>> list(possible_placements(2, '???'))
-    [('', ''), ('', '')]
+    [0, 1]
     >>> list(possible_placements(1, '???'))
-    [('', '?'), ('', ''), ('?', '')]
+    [0, 1, 2]
     >>> list(possible_placements(1, '????'))
-    [('', '??'), ('', '?'), ('?', ''), ('??', '')]
+    [0, 1, 2, 3]
     >>> list(possible_placements(1, '?#?'))
-    [('', '')]
+    [1]
     >>> list(possible_placements(2, '?#?'))
-    [('', ''), ('', '')]
+    [0, 1]
     >>> list(possible_placements(1, '?#??'))
-    [('', '?'), ('?#', '')]
+    [1, 3]
     >>> list(possible_placements(2, '?#??'))
-    [('', '?'), ('', '')]
+    [0, 1]
     >>> list(possible_placements(2, "?"))
     []
     """
@@ -38,10 +38,7 @@ def possible_placements(n: int, pattern: str):
         if last_dot >= 0:
             start = last_dot + 1
             continue
-
-        before = pattern[:max(0, start - 1)]
-        after = pattern[start + n + 1:]
-        yield before, after
+        yield start
         start += 1
 
 
@@ -62,7 +59,6 @@ def partition_groups(groups):
     return groups[:middle], longest, groups[middle + 1:]
 
 
-@functools.lru_cache(2048)
 def count_placements(pattern, groups):
     """
     >>> count_placements("", ())
@@ -87,12 +83,48 @@ def count_placements(pattern, groups):
             return 0
         return 1
 
+    pattern = pattern.strip('.')
+
     if pattern == '':
         return 0
 
-    g_before, g, g_after = partition_groups(groups)
+    return count_placements_internal(pattern, groups)
+
+
+@functools.lru_cache(4096)
+def count_placements_internal(pattern, groups):
+    if pattern.startswith('#'):
+        g = groups[0]
+        g_before = groups[:0]
+        g_after = groups[1:]
+
+        if g > len(pattern):
+            return 0
+        if any(c == '.' for c in pattern[:g]):
+            return 0
+        if len(pattern) > g and pattern[g] == '#':
+            return 0
+        placements = [0]
+    elif pattern.endswith('#'):
+        g = groups[-1]
+        g_before = groups[:-1]
+        g_after = groups[:0]
+
+        if g > len(pattern):
+            return 0
+        if any(c == '.' for c in pattern[-g:]):
+            return 0
+        if len(pattern) > g and pattern[-(g + 1)] == '#':
+            return 0
+        placements = [len(pattern) - g]
+    else:
+        g_before, g, g_after = partition_groups(groups)
+        placements = possible_placements(g, pattern)
+
     total = 0
-    for (before, after) in possible_placements(g, pattern):
+    for start in placements:
+        before = pattern[:max(0, start - 1)]
+        after = pattern[start + g + 1:]
         total += count_placements(before, g_before) * count_placements(after, g_after)
 
     return total
@@ -110,7 +142,7 @@ def main():
             inputs.append((pattern, groups))
 
     for pattern, groups in inputs:
-        print(pattern, groups)
+        # print(pattern, groups)
         part1 += count_placements(pattern, groups)
 
         expanded_pattern = '?'.join([pattern] * 5)
