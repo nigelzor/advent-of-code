@@ -26,20 +26,14 @@ def possible_placements(n: int, pattern: str):
     []
     """
     last = len(pattern) - n
-    start = 0
-    while start <= last:
+    for start in range(0, last + 1):
         if start != 0 and pattern[start - 1] == '#':
-            start += 1
             continue
         if start != last and pattern[start + n] == '#':
-            start += 1
             continue
-        last_dot = pattern.rfind('.', start, start + n)
-        if last_dot >= 0:
-            start = last_dot + 1
+        if '.' in pattern[start:start + n]:
             continue
         yield start
-        start += 1
 
 
 def partition_groups(groups):
@@ -124,7 +118,11 @@ def count_placements_internal(pattern, groups):
     total = 0
     for start in placements:
         before = pattern[:max(0, start - 1)]
+        if not g_before and '#' in before:
+            continue
         after = pattern[start + g + 1:]
+        if not g_after and '#' in after:
+            continue
         total += count_placements(before, g_before) * count_placements(after, g_after)
 
     return total
