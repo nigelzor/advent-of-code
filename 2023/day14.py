@@ -96,14 +96,25 @@ def main():
             total += weight * count
         return total
 
-    for i in range(1000000000):
+    load_history = []
+    for i in range(max_x + max_y):
         tilt_n()
+        if i == 0:
+            print(f"Part 1: {load()}")
         tilt_w()
         tilt_s()
         tilt_e()
-        print(i + 1, load())
+        load_history.append(load())
 
-    print(f"Part 1: {load()}")
+    for cycle_length in range(1, (max_x + max_y) // 2):
+        pattern = load_history[-cycle_length:]
+        if load_history[-2 * cycle_length:-cycle_length] == pattern:
+            # print(f"pattern with length {cycle_length}")
+            target = 1000000000 % cycle_length
+            for i in range(len(load_history) - 1, -1, -1):
+                if (i + 1) % cycle_length == target:
+                    print(f"Part 2: {load_history[i]}")
+                    break
 
 
 if __name__ == "__main__":
