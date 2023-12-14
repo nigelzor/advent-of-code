@@ -48,24 +48,62 @@ def main():
     max_x = max(c.x for c in grid.keys())
     max_y = max(c.y for c in grid.keys())
 
-    for y in range(1, max_y + 1):
-        for x in range(0, max_x + 1):
-            if grid.get(Point(x, y)) == 'O':
-                above = y - 1
-                while above >= 0 and grid.get(Point(x, above)) is None:
-                    grid[Point(x, above)] = 'O'
-                    del grid[Point(x, above + 1)]
-                    above -= 1
+    def tilt_n():
+        for y in range(1, max_y + 1):
+            for x in range(0, max_x + 1):
+                if grid.get(Point(x, y)) == 'O':
+                    north = y - 1
+                    while north >= 0 and grid.get(Point(x, north)) is None:
+                        grid[Point(x, north)] = 'O'
+                        del grid[Point(x, north + 1)]
+                        north -= 1
 
-    print_grid(grid)
+    def tilt_w():
+        for x in range(1, max_x + 1):
+            for y in range(0, max_y + 1):
+                if grid.get(Point(x, y)) == 'O':
+                    west = x - 1
+                    while west >= 0 and grid.get(Point(west, y)) is None:
+                        grid[Point(west, y)] = 'O'
+                        del grid[Point(west + 1, y)]
+                        west -= 1
 
-    part1 = 0
-    for y in range(0, max_y + 1):
-        weight = max_y - y + 1
-        count = sum(1 for x in range(0, max_x + 1) if grid.get(Point(x, y)) == 'O')
-        part1 += weight * count
+    def tilt_s():
+        for y in reversed(range(0, max_y)):
+            for x in range(0, max_x + 1):
+                if grid.get(Point(x, y)) == 'O':
+                    south = y + 1
+                    while south <= max_y and grid.get(Point(x, south)) is None:
+                        grid[Point(x, south)] = 'O'
+                        del grid[Point(x, south - 1)]
+                        south += 1
 
-    print(f"Part 1: {part1}")
+    def tilt_e():
+        for x in reversed(range(0, max_x)):
+            for y in range(0, max_y + 1):
+                if grid.get(Point(x, y)) == 'O':
+                    east = x + 1
+                    while east <= max_x and grid.get(Point(east, y)) is None:
+                        grid[Point(east, y)] = 'O'
+                        del grid[Point(east - 1, y)]
+                        east += 1
+
+    def load():
+        total = 0
+        for y in range(0, max_y + 1):
+            weight = max_y - y + 1
+            count = sum(1 for x in range(0, max_x + 1) if grid.get(Point(x, y)) == 'O')
+            total += weight * count
+        return total
+
+    for i in range(1000000000):
+        tilt_n()
+        tilt_w()
+        tilt_s()
+        tilt_e()
+        print(i + 1, load())
+
+    print(f"Part 1: {load()}")
 
 
 if __name__ == "__main__":
