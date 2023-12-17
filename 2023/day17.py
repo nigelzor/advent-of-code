@@ -1,5 +1,4 @@
 import doctest
-from collections import defaultdict
 from dataclasses import dataclass
 from heapq import heappop, heappush
 
@@ -104,7 +103,7 @@ def main():
 
     pending = []
     best = dict()
-    best_by_direction = defaultdict(lambda: defaultdict(dict))
+    best_by_direction = dict()
 
     def add(point, total_loss, history):
         if point not in best or best[point][0] > total_loss:
@@ -113,14 +112,10 @@ def main():
                 print(f"new best: {total_loss}")
 
         if history:
-            last, n = tail_summary(history)
-            bbd = best_by_direction[point][last]
-            any_better = False
-            for n_or_more in range(n, 4):
-                if n_or_more not in bbd or bbd[n_or_more] > total_loss:
-                    bbd[n_or_more] = total_loss
-                    any_better = True
-            if not any_better:
+            last = history[-1]
+            if (point, last) not in best_by_direction or best_by_direction[(point, last)] > total_loss:
+                best_by_direction[(point, last)] = total_loss
+            else:
                 return
 
         # score = target to minimise
@@ -129,29 +124,47 @@ def main():
 
     add(Point(0, 0), 0, ())
 
-    while pending:
-        _score, total_loss, point, history = heappop(pending)
-
+    def available_directions_part1(history):
         for direction in (N, E, S, W):
-            next_point = point + direction
-            if next_point.x < 0 or next_point.x > max_x:
-                continue
-            if next_point.y < 0 or next_point.y > max_y:
-                continue
             if history:
                 last, n = tail_summary(history)
                 if last == direction * -1:
                     continue
                 if last == direction and n >= 3:
                     continue
+            yield direction
 
-            next_total_loss = total_loss + grid[next_point]
-            add(next_point, next_total_loss, history + (direction,))
+    def part2_next_step_options(history):
+        options = [N, E, S, W]
+        if history:
+            last = history[-1]
+            options.remove(last)
+            options.remove(last * -1)
+
+        for direction in options:
+            for distance in range(4, 10 + 1):
+                yield direction, distance
+
+    while pending:
+        _score, total_loss, point, history = heappop(pending)
+
+        for direction, distance in part2_next_step_options(history):
+            next_point = point + direction * distance
+            if next_point.x < 0 or next_point.x > max_x:
+                continue
+            if next_point.y < 0 or next_point.y > max_y:
+                continue
+            next_point = point
+            next_total_loss = total_loss
+            for _ in range(distance):
+                next_point += direction
+                next_total_loss += grid[next_point]
+            add(next_point, next_total_loss, history + (direction,) * distance)
 
     print()
     print_grid_path(grid, best[destination][1])
     print()
-    print(f"Part 1: {best[destination][0]}")
+    print(f"Part 2: {best[destination][0]}")
 
 
 if __name__ == "__main__":
