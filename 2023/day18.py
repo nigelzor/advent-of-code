@@ -61,7 +61,6 @@ def print_grid(g):
 
 def main():
     line_pattern = re.compile(r"(.) (\d+) \(#(.{6})\)")
-    grid = dict()
 
     direction_map = {
         'U': N,
@@ -70,42 +69,101 @@ def main():
         'R': E,
     }
 
-    lines = []
+    lines_1 = []
+    lines_2 = []
     with open('day18_input.txt') as f:
         for line in f:
             direction, distance, color = line_pattern.match(line).groups()
             direction = direction_map[direction]
             distance = int(distance)
-            lines.append((direction, distance, color))
+            lines_1.append((direction, distance))
 
-    position = Point(0, 0)
-    for (direction, distance, color) in lines:
-        for _ in range(distance):
-            position += direction
-            grid[position] = '#'
+            distance = int(color[:-1], 16)
+            direction = (E, S, W, N)[int(color[-1])]
+            lines_2.append((direction, distance))
 
-    # print_grid(grid)
+    def extend_possibilities(items):
+        options = set()
+        for item in items:
+            options.add(item)
+            options.add(item + 1)
+            options.add(item - 1)
+        return sorted(options)
 
-    min_x, max_x, min_y, max_y = bounds(grid)
-    min_x -= 1
-    min_y -= 1
-    max_x += 1
-    max_y += 1
+    def contained_area(lines):
+        ys = [0]
+        xs = [0]
+        for direction, distance in lines:
+            if direction == N:
+                ys.append(ys[-1] - distance)
+            elif direction == S:
+                ys.append(ys[-1] + distance)
+            elif direction == E:
+                xs.append(xs[-1] + distance)
+            elif direction == W:
+                xs.append(xs[-1] - distance)
+        xs = extend_possibilities(xs)
+        ys = extend_possibilities(ys)
 
-    pending = [Point(min_x, min_y)]
-    while pending:
-        position = pending.pop()
-        grid[position] = ' '
-        for direction in (N, S, E, W):
-            next_position = position + direction
-            if min_x <= next_position.x <= max_x and min_y <= next_position.y <= max_y:
-                if grid.get(next_position) is None:
-                    pending.append(next_position)
+        grid = dict()
+        position = Point(0, 0)
+        for direction, distance in lines:
+            if direction == E:
+                y_idx = ys.index(position.y)
+                for x_idx, x in enumerate(xs):
+                    if position.x < x <= position.x + distance:
+                        grid[Point(x_idx, y_idx)] = '#'
+            if direction == W:
+                y_idx = ys.index(position.y)
+                for x_idx, x in enumerate(xs):
+                    if position.x - distance <= x < position.x:
+                        grid[Point(x_idx, y_idx)] = '#'
+            if direction == S:
+                x_idx = xs.index(position.x)
+                for y_idx, y in enumerate(ys):
+                    if position.y < y < position.y + distance + 1:
+                        grid[Point(x_idx, y_idx)] = '#'
+            if direction == N:
+                x_idx = xs.index(position.x)
+                for y_idx, y in enumerate(ys):
+                    if position.y - distance <= y < position.y:
+                        grid[Point(x_idx, y_idx)] = '#'
 
-    # print_grid(grid)
+            position += direction * distance
 
-    part1 = (max_x - min_x + 1) * (max_y - min_y + 1) - sum(1 for v in grid.values() if v == ' ')
-    print(f'Part 1: {part1}')
+        # print_grid(grid)
+
+        min_x, max_x, min_y, max_y = bounds(grid)
+        min_x -= 1
+        min_y -= 1
+        max_x += 1
+        max_y += 1
+
+        pending = [Point(min_x, min_y)]
+        while pending:
+            position = pending.pop()
+            grid[position] = ' '
+            for direction in (N, S, E, W):
+                next_position = position + direction
+                if min_x <= next_position.x <= max_x and min_y <= next_position.y <= max_y:
+                    if grid.get(next_position) is None:
+                        pending.append(next_position)
+
+        # print_grid(grid)
+
+        total_area = 0
+        last_y = -1
+        for y_idx, y in enumerate(ys):
+            last_x = -1
+            for x_idx, x in enumerate(xs):
+                if grid.get(Point(x_idx, y_idx), '.') in ".#":
+                    total_area += (y - last_y) * (x - last_x)
+                last_x = x
+            last_y = y
+        return total_area
+
+    print(f'Part 1: {contained_area(lines_1)}')
+    print(f'Part 2: {contained_area(lines_2)}')
 
 
 if __name__ == "__main__":
