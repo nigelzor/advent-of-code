@@ -1,6 +1,6 @@
 import doctest
 from dataclasses import dataclass
-from typing import Set
+from z3 import Solver, Int
 
 
 @dataclass(frozen=True, order=True)
@@ -36,17 +36,66 @@ def main():
                     plots.add(Point(x, y))
                     start = Point(x, y)
 
-    def step(occupied: Set[Point]):
-        result = set()
-        for o in occupied:
-            for d in [N, E, S, W]:
-                result.add(o + d)
-        return result & plots
+    width = max(p.x for p in plots) + 1
+    height = max(p.y for p in plots) + 1
 
-    occupied = {start}
-    for _ in range(64):
-        occupied = step(occupied)
-    print(f'Part 1: {len(occupied)}')
+    def is_infinite_plot(p):
+        return Point(p.x % width, p.y % height) in plots
+
+    def part1():
+        occupied = {start}
+        for _ in range(64):
+            result = set()
+            for o in occupied:
+                for d in [N, E, S, W]:
+                    result.add(o + d)
+            occupied = result & plots
+            # print(len(occupied))
+        return len(occupied)
+
+    print(f'Part 1: {part1()}')
+
+    def part2_slow():
+        edge = {start}
+        visited = set()
+        enclosed = [0, 0]
+        target = 26501365
+
+        for i in range(1, target):
+            next_edge = set()
+            for o in edge:
+                for d in [N, E, S, W]:
+                    n = o + d
+                    if is_infinite_plot(n) and n not in visited:
+                        next_edge.add(n)
+            added = 0
+            for n in next_edge:
+                visited.add(n)
+                added += 1
+            enclosed[i % 2] += added
+            edge = next_edge
+
+            if i % width == target % width:
+                yield enclosed[i % 2]
+
+    def part2():
+        sequence = part2_slow()
+        zero = next(sequence)
+        one = next(sequence)
+        two = next(sequence)
+        a = Int('a')
+        b = Int('b')
+        c = Int('c')
+        s = Solver()
+        s.add(zero == a * pow(0, 2) + b * 0 + c)
+        s.add(one == a * pow(1, 2) + b * 1 + c)
+        s.add(two == a * pow(2, 2) + b * 2 + c)
+        s.check()
+        model = s.model()
+        n = (26501365 // width)
+        return model[a].as_long() * pow(n, 2) + model[b].as_long() * n + model[c].as_long()
+
+    print(f'Part 2: {part2()}')
 
 
 if __name__ == "__main__":
