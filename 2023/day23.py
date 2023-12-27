@@ -1,39 +1,14 @@
 import doctest
-from dataclasses import dataclass
 
 
-@dataclass(frozen=True, order=True)
-class Point:
-    x: int
-    y: int
-
-    def __add__(self, other):
-        return Point(self.x + other.x, self.y + other.y)
-
-    def __mul__(self, other):
-        return Point(self.x * other, self.y * other)
+def Point(x, y):
+    return x << 16 | y
 
 
 N = Point(0, -1)
 S = Point(0, 1)
 E = Point(1, 0)
 W = Point(-1, 0)
-
-
-def bounds(g):
-    min_x = min(c.x for c in g.keys())
-    max_x = max(c.x for c in g.keys())
-    min_y = min(c.y for c in g.keys())
-    max_y = max(c.y for c in g.keys())
-    return min_x, max_x, min_y, max_y
-
-
-def print_grid(g):
-    minx, maxx, miny, maxy = bounds(g)
-    for y in range(miny, maxy + 1):
-        for x in range(minx, maxx + 1):
-            print(g.get(Point(x, y), '.'), end='')
-        print('')
 
 
 def main():
