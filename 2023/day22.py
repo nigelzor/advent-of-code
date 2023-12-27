@@ -50,6 +50,9 @@ class Brick:
     def min_z(self):
         return min(self.a.z, self.b.z)
 
+    def max_z(self):
+        return min(self.a.z, self.b.z)
+
     def move_down(self):
         self.a = self.a + DOWN
         self.b = self.b + DOWN
@@ -86,6 +89,9 @@ class Brick:
 
     def intersects(self, other):
         return any(self.occupies(p) for p in other.contents())
+
+    def __hash__(self):
+        return id(self)
 
 
 def main():
@@ -133,20 +139,44 @@ def main():
         for p in brick.footprint:
             for brick in bricks_in_col[p]:
                 if brick.occupies_z(z):
-                    result.add(id(brick))
+                    result.add(brick)
         return result
 
-    pinned = set()
-    for brick in bricks:
-        below = bricks_below(brick)
-        if len(below) < 2:
-            for b in below:
-                pinned.add(b)
+    def part1():
+        pinned = set()
+        for brick in bricks:
+            below = bricks_below(brick)
+            if len(below) < 2:
+                for b in below:
+                    pinned.add(b)
+        return len(bricks) - len(pinned)
 
-    part1 = len(bricks) - len(pinned)
+    print(f'Part 1: {part1()}')
 
-    # 782 is too high
-    print(f'Part 1: {part1}')
+    def part2():
+        would_fall = defaultdict(list)
+
+        for brick in bricks:
+            if brick.min_z() > 1:
+                below = frozenset(bricks_below(brick))
+                would_fall[below].append(brick)
+
+        total = 0
+        for brick in bricks:
+            falling = {brick}
+            extended = True
+            while extended:
+                extended = False
+                for ks, fs in would_fall.items():
+                    if all(k in falling for k in ks):
+                        for f in fs:
+                            if f not in falling:
+                                extended = True
+                                falling.add(f)
+            total += len(falling) - 1
+        return total
+
+    print(f'Part 2: {part2()}')
 
 
 if __name__ == "__main__":
