@@ -4,3 +4,4 @@ matplotlib
 flake8
 z3-solver
 scipy
+numpy
