@@ -28,7 +28,7 @@ numpy==1.23.5
     #   matplotlib
 packaging==21.3
     # via matplotlib
-pillow==10.1.0
+pillow==10.3.0
     # via matplotlib
 pycodestyle==2.10.0
     # via flake8
