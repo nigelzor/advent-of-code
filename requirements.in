@@ -1,7 +1,7 @@
 decorator
 networkx
 matplotlib
-flake8
+ruff
 z3-solver
 scipy
 numpy

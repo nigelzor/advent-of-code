@@ -16,4 +16,5 @@ requirements.txt: requirements.in venv
 
 .PHONY: lint
 lint:
-	venv/bin/flake8 --ignore=E501 2023/*.py
+	venv/bin/ruff check --ignore E741 2023 2024
+	venv/bin/ruff format 2024
