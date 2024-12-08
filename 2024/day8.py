@@ -45,6 +45,21 @@ def main():
 
     print(f"part 1: {len(antinodes)}")
 
+    antinodes = set()
+    for frequency, nodes in frequencies.items():
+        for a, b in combinations(nodes, 2):
+            angle = a - b
+            p = a
+            while in_bounds(p):
+                antinodes.add(p)
+                p += angle
+            p = a
+            while in_bounds(p):
+                antinodes.add(p)
+                p -= angle
+
+    print(f"part 2: {len(antinodes)}")
+
 
 if __name__ == "__main__":
     doctest.testmod()
