@@ -1,52 +1,43 @@
 import doctest
+from functools import lru_cache
 
 
-def blink_one(stone):
+def blink(stone):
     """
-    >>> blink_one(0)
-    1
-    >>> blink_one(1)
-    2024
-    >>> blink_one(2024)
+    >>> blink(0)
+    (1,)
+    >>> blink(1)
+    (2024,)
+    >>> blink(2024)
     (20, 24)
     """
     if stone == 0:
-        return 1
+        return (1,)
     ss = str(stone)
     sl = len(ss)
     if sl % 2 == 0:
         mid = sl // 2
         return int(ss[:mid]), int(ss[mid:])
-    return stone * 2024
+    return (stone * 2024,)
 
 
-def blink_all(stones):
-    """
-    >>> blink_all([125, 17])
-    [253000, (1, 7)]
-    """
-    if isinstance(stones, (list, tuple)):
-        return [blink_all(s) for s in stones]
-    return blink_one(stones)
+def length_after(stone, n):
+    if n == 0:
+        return 1
+    return length_after_(stone, n)
 
 
-def stones_length(stones):
-    if isinstance(stones, (list, tuple)):
-        return sum(stones_length(s) for s in stones)
-    return 1
+@lru_cache(2048)
+def length_after_(stone, n):
+    return sum(length_after(s, n - 1) for s in blink(stone))
 
 
 def part1(stones):
-    for i in range(25):
-        stones = blink_all(stones)
-    return stones_length(stones)
+    return sum(length_after(s, 25) for s in stones)
 
 
 def part2(stones):
-    for i in range(75):
-        stones = blink_all(stones)
-        print(stones_length(stones))
-    return stones_length(stones)
+    return sum(length_after(s, 75) for s in stones)
 
 
 def main():
