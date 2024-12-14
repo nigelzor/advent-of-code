@@ -43,12 +43,35 @@ def main():
 
         return product(quadrants)
 
-    for _ in range(100):
+    def print_room():
+        occupied = {p for p, v in robots}
+        for y in range(height + 1):
+            for x in range(width + 1):
+                print("#" if (x, y) in occupied else " ", end="")
+            print()
 
+    def has_horizontal_line():
+        occupied = {p for p, v in robots}
+        for y in range(height + 1):
+            consecutive = 0
+            for x in range(width + 1):
+                if (x, y) in occupied:
+                    consecutive += 1
+                    if consecutive >= 10:
+                        return True
+                else:
+                    consecutive = 0
+
+    for i in range(1, 10000):
         tick()
 
-    part1 = safety_factor()
-    part2 = 0
+        if i == 100:
+            part1 = safety_factor()
+
+        if has_horizontal_line():
+            part2 = i
+            print_room()
+            break
 
     print(f"part 1: {part1}")
     print(f"part 2: {part2}")
