@@ -48,12 +48,20 @@ def main():
                 g.add_edge((k, direction), (k, turn_left[direction]), weight=1000)
                 g.add_edge((k, direction), (k, turn_right[direction]), weight=1000)
 
-    part1 = min(
-        nx.shortest_path_length(g, (start, E), (end, direction), weight="weight")
-        for direction in DIRECTIONS
-    )
+    # facing doesn't matter at the end node
+    for direction in DIRECTIONS:
+        g.add_edge((end, direction), end, weight=0)
 
+    part1 = nx.shortest_path_length(g, (start, E), end, weight="weight")
     print(f"part 1: {part1}")
+
+    good_seats = set()
+    for path in nx.all_shortest_paths(g, (start, E), end, weight="weight"):
+        for step in path[:-1]:
+            good_seats.add(step[0])
+
+    part2 = len(good_seats)
+    print(f"part 2: {part2}")
 
 
 if __name__ == "__main__":
