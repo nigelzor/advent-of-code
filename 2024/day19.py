@@ -1,36 +1,40 @@
 import doctest
+from functools import lru_cache
 
 
-def simplify_patterns(available):
+@lru_cache(2048)
+def pattern_possibilities(pattern, available):
     """
-    >>> simplify_patterns({"b", "bb"})
-    {'b'}
+    >>> pattern_possibilities("bb", ("b", "bb"))
+    2
     """
-    return {p for p in available if not pattern_possible(p, available - {p})}
-
-
-def pattern_possible(pattern, available):
     if pattern == "":
-        return True
-    for a in available:
-        if pattern.startswith(a):
-            if pattern_possible(pattern[len(a) :], available):
-                return True
-    return False
+        return 1
+    return sum(
+        pattern_possibilities(pattern[len(a) :], available)
+        for a in available
+        if pattern.startswith(a)
+    )
 
 
 def main():
     with open("day19_input.txt") as f:
         lines = iter(line.strip() for line in f)
 
-        available = set(next(lines).split(", "))
+        available = tuple(next(lines).split(", "))
         next(lines)
         desired = list(lines)
 
-    unique_patterns = simplify_patterns(available)
-    part1 = sum(1 for pattern in desired if pattern_possible(pattern, unique_patterns))
+    part1 = 0
+    part2 = 0
+    for pattern in desired:
+        possibilities = pattern_possibilities(pattern, available)
+        if possibilities:
+            part1 += 1
+            part2 += possibilities
 
     print(f"part 1: {part1}")
+    print(f"part 2: {part2}")
 
 
 if __name__ == "__main__":
