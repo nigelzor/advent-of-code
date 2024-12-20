@@ -1,4 +1,5 @@
 import doctest
+from collections import defaultdict
 from dataclasses import dataclass
 import networkx as nx
 
@@ -11,17 +12,24 @@ class Point:
     def __add__(self, other):
         return Point(self.x + other.x, self.y + other.y)
 
+    def duration(self):
+        return abs(self.x) + abs(self.y)
+
 
 N = Point(0, -1)
 S = Point(0, 1)
 E = Point(1, 0)
 W = Point(-1, 0)
 
-CHEATS = [
+PART1_CHEATS = [
     Point(0, -2),
     Point(0, 2),
     Point(2, 0),
     Point(-2, 0),
+]
+
+PART2_CHEATS = [
+    Point(x, y) for x in range(-20, 21) for y in range(-20 + abs(x), 21 - abs(x))
 ]
 
 
@@ -49,17 +57,20 @@ def main():
 
     distances = nx.single_source_dijkstra_path_length(g, end)
 
-    part1 = 0
-    for k, v in maze.items():
-        if v == ".":
-            for cheat in CHEATS:
-                k2 = k + cheat
-                if k2 in distances:
-                    d = distances[k] - distances[k2] - 2
-                    if d >= 100:
-                        part1 += 1
+    def count_good_cheats(allowed, threshold=100):
+        counts = defaultdict(int)
+        for k, v in maze.items():
+            if v == ".":
+                for cheat in allowed:
+                    k2 = k + cheat
+                    if k2 in distances:
+                        saved = distances[k] - distances[k2] - cheat.duration()
+                        if saved >= threshold:
+                            counts[saved] += 1
+        return sum(counts.values())
 
-    print(f"part 1: {part1}")
+    print(f"part 1: {count_good_cheats(PART1_CHEATS)}")
+    print(f"part 2: {count_good_cheats(PART2_CHEATS)}")
 
 
 if __name__ == "__main__":
