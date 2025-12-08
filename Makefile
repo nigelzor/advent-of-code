@@ -16,5 +16,5 @@ requirements.txt: requirements.in venv
 
 .PHONY: lint
 lint:
-	venv/bin/ruff check --ignore E741 2023 2024
-	venv/bin/ruff format 2024
+	venv/bin/ruff check --ignore E741 2023 2024 2025
+	venv/bin/ruff format 2024 2025
